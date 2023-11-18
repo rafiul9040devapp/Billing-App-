@@ -5,27 +5,34 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.rafiul.billingapp.components.InputAmountField
 import com.rafiul.billingapp.ui.theme.BillingAppTheme
-import com.rafiul.billingapp.ui.theme.Lavandar
+import com.rafiul.billingapp.ui.theme.Lavender
 
 
 class MainActivity : ComponentActivity() {
@@ -33,7 +40,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyApp {
-               TopHeader()
+//                TopHeader()
+                MainContent()
+
             }
 
         }
@@ -63,7 +72,7 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
             .fillMaxWidth()
             .height(150.dp)
             .clip(shape = CircleShape.copy(all = CornerSize(12.dp))),
-        color = Lavandar
+        color = Lavender
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -87,17 +96,75 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
     }
 }
 
+
 @Preview
 @Composable
-fun MainContent(){
+fun MainContent() {
+
+
+    BillForm() { billAmount ->
+
+    }
+
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun BillForm(
+    modifier: Modifier = Modifier,
+    onValueChange: (String) -> Unit = {}
+) {
+
+    val totalBill = remember {
+        mutableStateOf("")
+    }
+
+    val inputState = remember(totalBill.value) {
+        totalBill.value.trim().isNotEmpty()
+    }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     Surface(
         modifier = Modifier
             .padding(2.dp)
             .fillMaxWidth(),
         shape = RoundedCornerShape(corner = CornerSize(8.dp)),
-        border = BorderStroke(width = 2.dp, color = Lavandar)
+        border = BorderStroke(width = 2.dp, color = Lavender)
     ) {
-        Column {
+        Column(
+            modifier = Modifier.padding(6.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
+        ) {
+            InputAmountField(
+                valueState = totalBill,
+                labelId = "Enter Bill",
+                enabled = true,
+                isSingleLine = true,
+                onAction = KeyboardActions {
+                    if (!inputState) return@KeyboardActions
+                    onValueChange(totalBill.value.trim())
+                    keyboardController?.hide()
+                }
+            )
+
+            if (inputState) {
+                Row(
+                    modifier = Modifier.padding(3.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "Split",
+                        modifier = Modifier.align(alignment = Alignment.CenterVertically)
+                    )
+
+                }
+            } else {
+                Box {
+
+                }
+            }
         }
 
     }
