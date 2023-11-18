@@ -28,7 +28,7 @@ fun RoundIconButton(
     imageVector: ImageVector,
     onClick: () -> Unit,
     tint: Color = Color.Black.copy(alpha = 0.8f),
-    backgroundColor: Color = MaterialTheme.colorScheme.onBackground,
+    backgroundColor: Color = Color.White,
     elevation: Dp = 4.dp
 ) {
     Card(
