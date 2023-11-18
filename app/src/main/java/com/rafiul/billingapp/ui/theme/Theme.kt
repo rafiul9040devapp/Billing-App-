@@ -37,6 +37,22 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+
+@Composable
+fun CustomTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+//        colors = if (darkTheme) Color.White else Color.White,
+        content = content
+    )
+}
+
 @Composable
 fun BillingAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
