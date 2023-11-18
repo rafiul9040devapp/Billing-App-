@@ -22,9 +22,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,11 +37,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rafiul.billingapp.components.InputAmountField
 import com.rafiul.billingapp.ui.theme.BillingAppTheme
-import com.rafiul.billingapp.ui.theme.CustomTheme
 import com.rafiul.billingapp.ui.theme.Lavender
 import com.rafiul.billingapp.widgets.RoundIconButton
 
@@ -49,7 +51,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyApp {
-//                TopHeader()
                 MainContent()
 
             }
@@ -63,15 +64,11 @@ class MainActivity : ComponentActivity() {
 fun MyApp(content: @Composable () -> Unit) {
 
     BillingAppTheme {
-        CustomTheme {
-            Surface(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                color = Color.White
-            ) {
-                content()
-            }
+        Surface(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp), color = Color.White
+        ) {
+            content()
         }
-
     }
 }
 
@@ -83,8 +80,9 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
         modifier = Modifier
             .fillMaxWidth()
             .height(150.dp)
-            .clip(shape = CircleShape.copy(all = CornerSize(12.dp))),
-        color = Lavender
+            .padding(all = 16.dp),
+        color = Lavender,
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -109,7 +107,7 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
 }
 
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun MainContent() {
 
@@ -123,8 +121,7 @@ fun MainContent() {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BillForm(
-    modifier: Modifier = Modifier,
-    onValueChange: (String) -> Unit = {}
+    modifier: Modifier = Modifier, onValueChange: (String) -> Unit = {}
 ) {
 
     val totalBill = remember {
@@ -139,93 +136,149 @@ fun BillForm(
         mutableIntStateOf(1)
     }
 
+    val personRange = IntRange(start = 1, endInclusive = 100)
+
+    val sliderPositionState = remember {
+        mutableFloatStateOf(0f)
+    }
+
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    Surface(
-        modifier = Modifier
-            .padding(2.dp)
-            .fillMaxWidth()
-            .background(color = Color.White),
-        shape = RoundedCornerShape(corner = CornerSize(8.dp)),
-        border = BorderStroke(width = 2.dp, color = Lavender)
+
+    Column(
+        modifier = Modifier.padding(4.dp)
     ) {
-        Column(
+        TopHeader()
+
+
+        Surface(
             modifier = Modifier
-                .padding(6.dp)
+                .padding(2.dp)
+                .fillMaxWidth()
                 .background(color = Color.White),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.Start
+            shape = RoundedCornerShape(corner = CornerSize(8.dp)),
+            border = BorderStroke(width = 2.dp, color = Lavender)
         ) {
-            InputAmountField(
-                modifier = modifier
+            Column(
+                modifier = Modifier
+                    .padding(6.dp)
+                    .background(color = Color.White),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.Start
+            ) {
+
+                InputAmountField(modifier = modifier
                     .background(color = Color.White)
                     .fillMaxWidth(1f),
-                valueState = totalBill,
-                labelId = "Enter Bill",
-                enabled = true,
-                isSingleLine = true,
-                onAction = KeyboardActions {
-                    if (!inputState) return@KeyboardActions
-                    onValueChange(totalBill.value.trim())
-                    keyboardController?.hide()
-                }
-            )
+                    valueState = totalBill,
+                    labelId = "Enter Bill",
+                    enabled = true,
+                    isSingleLine = true,
+                    onAction = KeyboardActions {
+                        if (!inputState) return@KeyboardActions
+                        onValueChange(totalBill.value.trim())
+                        keyboardController?.hide()
+                    })
 
-            if (inputState) {
-                Row(
-                    modifier = Modifier.padding(3.dp),
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Text(
-                        text = "Split",
-                        modifier = Modifier.align(alignment = Alignment.CenterVertically),
-                        color = Color.Black,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-
-                    Spacer(modifier = Modifier.width(120.dp))
-
+                if (inputState) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 3.dp),
-                        horizontalArrangement = Arrangement.End
+                        modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.Start
                     ) {
-                        RoundIconButton(imageVector = Icons.Default.Remove, onClick = {
-                            if (numberOfPerson.intValue >  1) {
-                              numberOfPerson.intValue =  numberOfPerson.intValue - 1
-                            }
-                        })
-
                         Text(
-                            text = "${numberOfPerson.intValue}",
-                            modifier = Modifier
-                                .align(Alignment.CenterVertically)
-                                .padding(start = 9.dp, end = 9.dp),
+                            text = "Split",
+                            modifier = Modifier.align(alignment = Alignment.CenterVertically),
                             color = Color.Black,
                             style = MaterialTheme.typography.headlineSmall
                         )
 
-                        RoundIconButton(imageVector = Icons.Default.Add, onClick = {
-                            numberOfPerson.intValue = numberOfPerson.intValue + 1
-                        })
+                        Spacer(modifier = Modifier.width(120.dp))
+
+                        Row(
+                            modifier = Modifier.padding(horizontal = 3.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            RoundIconButton(imageVector = Icons.Default.Remove, onClick = {
+                                numberOfPerson.intValue =
+                                    if (numberOfPerson.intValue > 1) numberOfPerson.intValue - 1 else 1
+
+                            })
+
+                            Text(
+                                text = "${numberOfPerson.intValue}",
+                                modifier = Modifier
+                                    .align(Alignment.CenterVertically)
+                                    .padding(start = 9.dp, end = 9.dp),
+                                color = Color.Black,
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+
+                            RoundIconButton(imageVector = Icons.Default.Add, onClick = {
+                                if (numberOfPerson.intValue < personRange.last) {
+                                    numberOfPerson.intValue = numberOfPerson.intValue + 1
+                                }
+                            })
+
+                        }
+
 
                     }
 
-                }
-            } else {
-                Box {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        val formattedTip = "%.0f".format(sliderPositionState.floatValue * 100)
 
+                        Text(
+                            text = "Tip",
+                            modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                            color = Color.Black,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+
+                        Spacer(modifier = Modifier.width(150.dp))
+
+                        Text(
+                            text = "$${formattedTip}.00",
+                            modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                            color = Color.Black,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+
+                    }
+
+                    Column(
+                        modifier = Modifier.padding(all = 6.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val formattedTip = "%.0f".format(sliderPositionState.floatValue * 100)
+                        Text(
+                            text = "${formattedTip}%",
+                            color = Color.Black,
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(15.dp))
+
+                        Slider(value = sliderPositionState.floatValue,
+                            onValueChange = { newValue ->
+                                sliderPositionState.floatValue = newValue
+                            },
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                            steps = 5,
+                            onValueChangeFinished = {})
+                    }
+
+                } else {
+                    Box {
+
+                    }
                 }
+
+
             }
-        }
-
-    }
-}
-
-
-@Composable
-fun GreetingPreview() {
-    BillingAppTheme {
-        MyApp {
 
         }
     }
