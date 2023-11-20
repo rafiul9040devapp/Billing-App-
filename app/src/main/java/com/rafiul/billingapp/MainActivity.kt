@@ -1,7 +1,6 @@
 package com.rafiul.billingapp
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -26,6 +25,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,9 +54,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApp {
                 MainContent()
-
             }
-
         }
     }
 }
@@ -74,7 +72,7 @@ fun MyApp(content: @Composable () -> Unit) {
     }
 }
 
-@Preview()
+
 @Composable
 fun TopHeader(totalPerPerson: Double = 0.0) {
 
@@ -113,9 +111,26 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
 @Composable
 fun MainContent() {
 
+    val numberOfPerson = remember {
+        mutableIntStateOf(1)
+    }
 
-    BillForm() { billAmount ->
+    val tipAmountState = remember {
+        mutableDoubleStateOf(0.0)
+    }
 
+    val totalPerPersonState = remember {
+        mutableDoubleStateOf(0.0)
+    }
+
+    Column(
+        modifier = Modifier.padding(all = 4.dp)
+    ) {
+        BillForm(
+            numberOfPerson = numberOfPerson,
+            tipAmountState = tipAmountState,
+            totalPerPersonState = totalPerPersonState
+        ) {}
     }
 
 }
@@ -123,7 +138,12 @@ fun MainContent() {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BillForm(
-    modifier: Modifier = Modifier, onValueChange: (String) -> Unit = {}
+    modifier: Modifier = Modifier,
+    personRange: IntRange = 1..100,
+    numberOfPerson: MutableState<Int>,
+    tipAmountState: MutableState<Double>,
+    totalPerPersonState: MutableState<Double>,
+    onValueChange: (String) -> Unit = {}
 ) {
 
     val totalBill = remember {
@@ -134,197 +154,177 @@ fun BillForm(
         totalBill.value.trim().isNotEmpty()
     }
 
-    val numberOfPerson = remember {
-        mutableIntStateOf(1)
-    }
-
-    val personRange = IntRange(start = 1, endInclusive = 100)
-
     val sliderPositionState = remember {
         mutableFloatStateOf(0f)
     }
-//    val formattedTip = (sliderPositionState.floatValue * 100).toInt()
-
-    val tipAmountState = remember {
-        mutableDoubleStateOf(0.0)
-    }
-
-    val totalPerPersonState = remember {
-        mutableDoubleStateOf(0.0)
-    }
-
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
 
-    Column(
-        modifier = Modifier.padding(4.dp)
+    TopHeader(totalPerPerson = totalPerPersonState.value)
+
+
+    Surface(
+        modifier = Modifier
+            .padding(2.dp)
+            .fillMaxWidth()
+            .background(color = Color.White),
+        shape = RoundedCornerShape(corner = CornerSize(8.dp)),
+        border = BorderStroke(width = 2.dp, color = Lavender)
     ) {
-        TopHeader(totalPerPerson = totalPerPersonState.doubleValue)
-
-
-        Surface(
+        Column(
             modifier = Modifier
-                .padding(2.dp)
-                .fillMaxWidth()
+                .padding(6.dp)
                 .background(color = Color.White),
-            shape = RoundedCornerShape(corner = CornerSize(8.dp)),
-            border = BorderStroke(width = 2.dp, color = Lavender)
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(6.dp)
-                    .background(color = Color.White),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.Start
-            ) {
 
-                InputAmountField(modifier = modifier
-                    .background(color = Color.White)
-                    .fillMaxWidth(1f),
-                    valueState = totalBill,
-                    labelId = "Enter Bill",
-                    enabled = true,
-                    isSingleLine = true,
-                    onAction = KeyboardActions {
-                        if (!inputState) return@KeyboardActions
-                        onValueChange(totalBill.value.trim())
-                        keyboardController?.hide()
-                    })
+            InputAmountField(modifier = modifier
+                .background(color = Color.White)
+                .fillMaxWidth(1f),
+                valueState = totalBill,
+                labelId = "Enter Bill",
+                enabled = true,
+                isSingleLine = true,
+                onAction = KeyboardActions {
+                    if (!inputState) return@KeyboardActions
+                    onValueChange(totalBill.value.trim())
+                    keyboardController?.hide()
+                })
 
-                if (inputState) {
-                    Row(
-                        modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.Start
-                    ) {
-                        Text(
-                            text = "Split",
-                            modifier = Modifier.align(alignment = Alignment.CenterVertically),
-                            color = Color.Black,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
+            if (inputState) {
+                Row(
+                    modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "Split",
+                        modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                        color = Color.Black,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
 
-                        Spacer(modifier = Modifier.width(120.dp))
-
-                        Row(
-                            modifier = Modifier.padding(horizontal = 3.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            RoundIconButton(imageVector = Icons.Default.Remove, onClick = {
-                                numberOfPerson.intValue =
-                                    if (numberOfPerson.intValue > 1) numberOfPerson.intValue - 1 else 1
-
-                                totalPerPersonState.doubleValue = calculateTotalPerPerson(
-                                    totalBill = totalBill.value.toDouble(),
-                                    tipPercentage = sliderPositionState.floatValue,
-                                    splitAmongPerson = numberOfPerson.intValue
-                                )
-
-                            })
-
-                            Text(
-                                text = "${numberOfPerson.intValue}",
-                                modifier = Modifier
-                                    .align(Alignment.CenterVertically)
-                                    .padding(start = 9.dp, end = 9.dp),
-                                color = Color.Black,
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-
-                            RoundIconButton(imageVector = Icons.Default.Add, onClick = {
-                                if (numberOfPerson.intValue < personRange.last) {
-                                    numberOfPerson.intValue = numberOfPerson.intValue + 1
-                                    totalPerPersonState.doubleValue = calculateTotalPerPerson(
-                                        totalBill = totalBill.value.toDouble(),
-                                        tipPercentage = sliderPositionState.floatValue,
-                                        splitAmongPerson = numberOfPerson.intValue
-                                    )
-                                }
-                            })
-
-                        }
-
-
-                    }
+                    Spacer(modifier = Modifier.width(120.dp))
 
                     Row(
-                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.Start
+                        modifier = Modifier.padding(horizontal = 3.dp),
+                        horizontalArrangement = Arrangement.End
                     ) {
+                        RoundIconButton(
+                            imageVector = Icons.Default.Remove,
+                            onClick = {
+                                numberOfPerson.value =
+                                    if (numberOfPerson.value > 1) numberOfPerson.value - 1 else 1
 
-                        Text(
-                            text = "Tip",
-                            modifier = Modifier.align(alignment = Alignment.CenterVertically),
-                            color = Color.Black,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-
-                        Spacer(modifier = Modifier.width(150.dp))
-
-                        Text(
-                            text = "$${String.format("%.0f", tipAmountState.doubleValue)}.00",
-                            modifier = Modifier.align(alignment = Alignment.CenterVertically),
-                            color = Color.Black,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-
-                    }
-
-                    Column(
-                        modifier = Modifier.padding(all = 6.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "${
-                                String.format(
-                                    "%.0f",
-                                    sliderPositionState.floatValue * 100
-                                )
-                            }%",
-                            color = Color.Black,
-                            style = MaterialTheme.typography.headlineSmall,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(15.dp))
-
-                        Slider(value = sliderPositionState.floatValue,
-                            onValueChange = { newValue ->
-                                sliderPositionState.floatValue = newValue
-
-//                                Log.d("Total Bill", totalBill.value)
-//                                Log.d("Percentage", formattedTip.toString())
-
-                                tipAmountState.doubleValue =
-                                    calculateTotalTip(
-                                        totalBill = totalBill.value.toDouble(),
-                                        tipPercentage = sliderPositionState.floatValue
-                                    )
-
-                                totalPerPersonState.doubleValue = calculateTotalPerPerson(
+                                totalPerPersonState.value = calculateTotalPerPerson(
                                     totalBill = totalBill.value.toDouble(),
                                     tipPercentage = sliderPositionState.floatValue,
-                                    splitAmongPerson = numberOfPerson.intValue
+                                    splitAmongPerson = numberOfPerson.value
                                 )
 
                             },
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp),
-                            steps = 5,
-                            onValueChangeFinished = {
-                                
-                            })
+                        )
+
+                        Text(
+                            text = "${numberOfPerson.value}",
+                            modifier = Modifier
+                                .align(Alignment.CenterVertically)
+                                .padding(start = 9.dp, end = 9.dp),
+                            color = Color.Black,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+
+                        RoundIconButton(
+                            imageVector = Icons.Default.Add,
+                            onClick = {
+                                if (numberOfPerson.value < personRange.last) {
+                                    numberOfPerson.value = numberOfPerson.value + 1
+                                    totalPerPersonState.value = calculateTotalPerPerson(
+                                        totalBill = totalBill.value.toDouble(),
+                                        tipPercentage = sliderPositionState.floatValue,
+                                        splitAmongPerson = numberOfPerson.value
+                                    )
+                                }
+                            },
+                        )
+
                     }
 
-                } else {
-                    Box {
 
-                    }
                 }
 
+                Row(
+                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
 
+                    Text(
+                        text = "Tip",
+                        modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                        color = Color.Black,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+
+                    Spacer(modifier = Modifier.width(150.dp))
+
+                    Text(
+                        text = "$${String.format("%.0f", tipAmountState.value)}.00",
+                        modifier = Modifier.align(alignment = Alignment.CenterVertically),
+                        color = Color.Black,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+
+                }
+
+                Column(
+                    modifier = Modifier.padding(all = 6.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "${
+                            String.format(
+                                "%.0f",
+                                sliderPositionState.floatValue * 100
+                            )
+                        }%",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    Slider(
+                        value = sliderPositionState.floatValue,
+                        onValueChange = { newValue ->
+                            sliderPositionState.floatValue = newValue
+
+                            tipAmountState.value =
+                                calculateTotalTip(
+                                    totalBill = totalBill.value.toDouble(),
+                                    tipPercentage = sliderPositionState.floatValue
+                                )
+
+                            totalPerPersonState.value = calculateTotalPerPerson(
+                                totalBill = totalBill.value.toDouble(),
+                                tipPercentage = sliderPositionState.floatValue,
+                                splitAmongPerson = numberOfPerson.value
+                            )
+
+                        },
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                        steps = 5,
+                        onValueChangeFinished = {
+                        },
+                    )
+                }
+            } else {
+                Box {
+                }
             }
-
         }
+
     }
 }
 
